@@ -1,14 +1,15 @@
 import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 
 from database import engine, Base
 from services.rag import RAGService
 from routers import chat
-
-load_dotenv()
 
 
 @asynccontextmanager
@@ -19,7 +20,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="DevDesk API", lifespan=lifespan)
+app = FastAPI(title="Agile Council API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
