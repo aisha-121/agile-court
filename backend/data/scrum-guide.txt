@@ -1,0 +1,27 @@
+Scrum Guide 2020
+
+Scrum is a lightweight framework that helps people, teams and organizations generate value through adaptive solutions for complex problems.
+
+The Scrum Team consists of one Scrum Master, one Product Owner, and Developers. There are no sub-teams or hierarchies. It is a cohesive unit of professionals focused on one objective at a time, the Product Goal.
+
+The Product Owner is accountable for maximizing the value of the product resulting from work of the Scrum Team. The Product Owner is also accountable for effective Product Backlog management. The Product Owner may represent the needs of many stakeholders in the Product Backlog.
+
+The Scrum Master is accountable for the Scrum Team's effectiveness. They do this by enabling the Scrum Team to improve its practices, within the Scrum framework. Scrum Masters are true leaders who serve the Scrum Team and the larger organization.
+
+Developers are the people in the Scrum Team that are committed to creating any aspect of a usable Increment each Sprint. The specific skills needed by the Developers are often broad and will vary with the domain of work.
+
+The Sprint is a container for all other events. Each Sprint may be considered a short project. Sprints are fixed length events of one month or less to create consistency. A new Sprint starts immediately after the conclusion of the previous Sprint.
+
+Sprint Planning initiates the Sprint by laying out the work to be performed for the Sprint. The resulting plan is created by the collaborative work of the entire Scrum Team. The Product Owner ensures that attendees are prepared to discuss the most important Product Backlog items and how they map to the Product Goal.
+
+The Daily Scrum is a 15-minute event for the Developers of the Scrum Team. To reduce complexity, it is held at the same time and place every working day of the Sprint. The purpose of the Daily Scrum is to inspect progress toward the Sprint Goal and adapt the Sprint Backlog as necessary.
+
+The Sprint Review is to inspect the outcome of the Sprint and determine future adaptations. The Scrum Team presents the results of their work to key stakeholders and progress toward the Product Goal is discussed.
+
+The Sprint Retrospective concludes the Sprint. Its purpose is to plan ways to increase quality and effectiveness. The Scrum Team inspects how the last Sprint went with regards to individuals, interactions, processes, tools, and their Definition of Done.
+
+The Definition of Done is a formal description of the state of the Increment when it meets the quality measures required for the product. The moment a Product Backlog item meets the Definition of Done, an Increment is born.
+
+The Product Backlog is an emergent, ordered list of what is needed to improve the product. It is the single source of work undertaken by the Scrum Team. Product Backlog items that can be Done by the Scrum Team within one Sprint are deemed ready for selection in a Sprint Planning event.
+
+The Sprint Backlog is composed of the Sprint Goal, the set of Product Backlog items selected for the Sprint, plus an actionable plan for delivering the Increment. The Sprint Backlog is a plan by and for the Developers.
