@@ -1,7 +1,23 @@
 export type Role = 'product_owner' | 'scrum_master' | 'tech_lead';
 
+export interface Project {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface Document {
+  id: number;
+  project_id: number;
+  filename: string;
+  doc_type: string;
+  created_at: string;
+}
+
 export interface Conversation {
   id: number;
+  project_id: number;
   role: Role;
   title: string;
   created_at: string;

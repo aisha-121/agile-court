@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Role, Conversation, Message } from '@/types';
 import * as api from '@/lib/api';
+import { useProjectStore } from '@/stores/projectStore';
 
 interface ChatState {
   conversations: Conversation[];
@@ -9,7 +10,7 @@ interface ChatState {
   loading: boolean;
   flipLoading: boolean;
   flipResult: { role: Role; content: string } | null;
-  
+
   fetchConversations: () => Promise<void>;
   createConversation: (role: Role) => Promise<void>;
   setActiveConversation: (id: number | null) => Promise<void>;
@@ -17,6 +18,7 @@ interface ChatState {
   deleteConversation: (id: number) => Promise<void>;
   flipPerspective: (lastUserMessage: string, targetRole: Role) => Promise<void>;
   clearFlipResult: () => void;
+  resetForProject: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -28,12 +30,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   flipResult: null,
 
   fetchConversations: async () => {
-    const convs = await api.fetchConversations();
+    const projectId = useProjectStore.getState().activeProjectId;
+    if (projectId === null) return;
+    const convs = await api.fetchConversations(projectId);
     set({ conversations: convs });
   },
 
   createConversation: async (role: Role) => {
-    const conv = await api.createConversation(role);
+    const projectId = useProjectStore.getState().activeProjectId;
+    if (projectId === null) return;
+    const conv = await api.createConversation(projectId, role);
     set((state) => ({
       conversations: [conv, ...state.conversations],
       activeConversationId: conv.id,
@@ -44,7 +50,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setActiveConversation: async (id: number | null) => {
     set({ activeConversationId: id, messages: [], flipResult: null });
     if (id) {
-      const msgs = await api.fetchMessages(id);
+      const projectId = useProjectStore.getState().activeProjectId;
+      if (projectId === null) return;
+      const msgs = await api.fetchMessages(projectId, id);
       set({ messages: msgs });
     }
   },
@@ -54,8 +62,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const conv = conversations.find((c) => c.id === activeConversationId);
     if (!conv) return;
 
+    const projectId = useProjectStore.getState().activeProjectId;
+    if (projectId === null) return;
+
     const role = conv.role;
-    
+
     const tempUserMsg: Message = {
       id: Date.now(),
       sender: 'user',
@@ -66,11 +77,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({ messages: [...state.messages, tempUserMsg], loading: true }));
 
     try {
-      const res = await api.sendMessage(role, {
+      const res = await api.sendMessage(projectId, role, {
         content,
         conversation_id: activeConversationId ?? undefined,
       });
-      
+
       const assistantMsg: Message = {
         id: res.message_id,
         sender: 'assistant',
@@ -98,7 +109,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   deleteConversation: async (id: number) => {
-    await api.deleteConversation(id);
+    const projectId = useProjectStore.getState().activeProjectId;
+    if (projectId === null) return;
+    await api.deleteConversation(projectId, id);
     set((state) => ({
       conversations: state.conversations.filter((c) => c.id !== id),
       activeConversationId: state.activeConversationId === id ? null : state.activeConversationId,
@@ -107,9 +120,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   flipPerspective: async (lastUserMessage: string, targetRole: Role) => {
+    const projectId = useProjectStore.getState().activeProjectId;
+    if (projectId === null) return;
     set({ flipLoading: true, flipResult: null });
     try {
-      const res = await api.flipPerspective({
+      const res = await api.flipPerspective(projectId, {
         last_user_message: lastUserMessage,
         target_role: targetRole,
       });
@@ -121,4 +136,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   clearFlipResult: () => set({ flipResult: null, flipLoading: false }),
+
+  resetForProject: () =>
+    set({ conversations: [], activeConversationId: null, messages: [], flipResult: null, flipLoading: false }),
 }));

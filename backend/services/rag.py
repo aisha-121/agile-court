@@ -1,17 +1,18 @@
 import os
-from typing import List
+from typing import List, Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "scrum_guide.txt")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "scrum-guide.txt")
 
 
 class RAGService:
     def __init__(self):
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.index = None
-        self.chunks = []
+        self.guide_index = None
+        self.guide_chunks: List[str] = []
+        self.project_indices: dict[int, dict] = {}  # project_id -> {index, chunks}
         self.dimension = 384
 
     def _chunk_text(self, text: str, chunk_size: int = 300, overlap: int = 50) -> List[str]:
@@ -29,39 +30,55 @@ class RAGService:
         if os.path.exists(DATA_PATH):
             with open(DATA_PATH, "r", encoding="utf-8") as f:
                 return f.read()
-        return self._default_guide()
-
-    def _default_guide(self) -> str:
         return (
             "Scrum is a lightweight framework that helps people, teams and organizations "
-            "generate value through adaptive solutions for complex problems. The Scrum Team "
-            "consists of one Scrum Master, one Product Owner, and Developers. The Product Owner "
-            "is accountable for maximizing the value of the product. The Scrum Master is accountable "
-            "for the Scrum Team's effectiveness. Developers are committed to creating a usable Increment "
-            "each Sprint. The Sprint is a container for all other events. Sprint Planning initiates the Sprint. "
-            "Daily Scrum inspects progress toward the Sprint Goal. Sprint Review inspects the outcome. "
-            "Sprint Retrospective plans ways to increase quality and effectiveness. The Definition of Done "
-            "is a formal description of the state of the Increment when it meets the quality measures required."
+            "generate value through adaptive solutions for complex problems."
         )
+
+    def _build_faiss_index(self, texts: List[str]):
+        embeddings = self.model.encode(texts, convert_to_numpy=True)
+        index = faiss.IndexFlatL2(self.dimension)
+        index.add(np.array(embeddings).astype("float32"))
+        return index
 
     def build_index(self):
         text = self._load_text()
-        self.chunks = self._chunk_text(text)
-        if not self.chunks:
+        self.guide_chunks = self._chunk_text(text)
+        if self.guide_chunks:
+            self.guide_index = self._build_faiss_index(self.guide_chunks)
+
+    def add_project_documents(self, project_id: int, docs: list[dict]):
+        """docs: list of {doc_type, content_text}"""
+        all_chunks = []
+        for doc in docs:
+            prefix = f"[{doc['doc_type'].upper()}]"
+            for chunk in self._chunk_text(doc["content_text"]):
+                all_chunks.append(f"{prefix} {chunk}")
+        if not all_chunks:
             return
+        self.project_indices[project_id] = {
+            "index": self._build_faiss_index(all_chunks),
+            "chunks": all_chunks,
+        }
 
-        embeddings = self.model.encode(self.chunks, convert_to_numpy=True)
-        self.index = faiss.IndexFlatL2(self.dimension)
-        self.index.add(np.array(embeddings).astype("float32"))
+    def remove_project(self, project_id: int):
+        self.project_indices.pop(project_id, None)
 
-    def retrieve(self, query: str, top_k: int = 2) -> str:
-        if self.index is None or not self.chunks:
-            return ""
+    def retrieve(self, query: str, project_id: Optional[int] = None, top_k_docs: int = 3, top_k_guide: int = 1) -> str:
+        parts = []
 
-        query_embedding = self.model.encode([query], convert_to_numpy=True)
-        distances, indices = self.index.search(
-            np.array(query_embedding).astype("float32"), top_k
-        )
+        if project_id is not None and project_id in self.project_indices:
+            entry = self.project_indices[project_id]
+            k = min(top_k_docs, len(entry["chunks"]))
+            if k > 0:
+                q_emb = self.model.encode([query], convert_to_numpy=True)
+                _, idxs = entry["index"].search(np.array(q_emb).astype("float32"), k)
+                parts.extend(entry["chunks"][i] for i in idxs[0] if 0 <= i < len(entry["chunks"]))
 
-        results = [self.chunks[i] for i in indices[0] if i < len(self.chunks)]
-        return "\n\n".join(results)
+        if self.guide_index is not None and self.guide_chunks:
+            k = min(top_k_guide, len(self.guide_chunks))
+            q_emb = self.model.encode([query], convert_to_numpy=True)
+            _, idxs = self.guide_index.search(np.array(q_emb).astype("float32"), k)
+            parts.extend(self.guide_chunks[i] for i in idxs[0] if 0 <= i < len(self.guide_chunks))
+
+        return "\n\n".join(parts)

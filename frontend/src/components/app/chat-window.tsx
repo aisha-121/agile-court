@@ -1,42 +1,54 @@
 import { useRef, useEffect, useState } from 'react';
-import { Send, Trash2 } from 'lucide-react';
+import { Send, Trash2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useChatStore } from '@/stores/chatStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { ROLE_CONFIG, ROLES } from '@/lib/roles';
 import { MessageBubble } from './message-bubble';
 
+function NoProjectState() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center p-8">
+      <div className="text-center space-y-4 max-w-xs">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted mx-auto">
+          <FolderOpen className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold">No project selected</p>
+          <p className="text-xs text-muted-foreground">
+            Create or select a project using the dropdown above, then start a conversation from the sidebar.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex h-12 items-center gap-2 border-b px-4 shrink-0">
-        <SidebarTrigger className="-ml-1" />
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center p-8">
-        <div className="text-center space-y-6 max-w-sm">
-          <div className="space-y-1.5">
-            <p className="text-xl font-semibold tracking-tight">Welcome to Agile Court</p>
-            <p className="text-sm text-muted-foreground">
-              You're the Developer. Pick a team member from the sidebar to start a conversation.
-            </p>
-          </div>
-          <div className="flex gap-8 justify-center">
-            {ROLES.map(([, cfg]) => (
-              <div key={cfg.initials} className="flex flex-col items-center gap-2">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-offset-2 ring-offset-background ring-transparent hover:ring-border transition-all ${cfg.avatarClass}`}>
-                  {cfg.initials}
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium">{cfg.name}</p>
-                  <p className="text-xs text-muted-foreground">{cfg.sublabel}</p>
-                </div>
+    <div className="flex flex-1 flex-col items-center justify-center p-8">
+      <div className="text-center space-y-6 max-w-sm">
+        <div className="space-y-1.5">
+          <p className="text-xl font-semibold tracking-tight">Welcome to Agile Court</p>
+          <p className="text-sm text-muted-foreground">
+            You're the Developer. Pick a team member from the sidebar to start a conversation.
+          </p>
+        </div>
+        <div className="flex gap-8 justify-center">
+          {ROLES.map(([, cfg]) => (
+            <div key={cfg.initials} className="flex flex-col items-center gap-2">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-offset-2 ring-offset-background ring-transparent hover:ring-border transition-all ${cfg.avatarClass}`}>
+                {cfg.initials}
               </div>
-            ))}
-          </div>
+              <div className="text-center">
+                <p className="text-xs font-medium">{cfg.name}</p>
+                <p className="text-xs text-muted-foreground">{cfg.sublabel}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -70,6 +82,7 @@ export function ChatWindow() {
   const loading = useChatStore((s) => s.loading);
   const sendMessage = useChatStore((s) => s.sendMessage);
   const deleteConversation = useChatStore((s) => s.deleteConversation);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
 
   const activeConv = conversations.find((c) => c.id === activeConversationId);
   const config = activeConv ? ROLE_CONFIG[activeConv.role] : null;
@@ -92,15 +105,27 @@ export function ChatWindow() {
     }
   };
 
-  if (!activeConversationId) return <EmptyState />;
+  if (activeProjectId === null) {
+    return (
+      <div className="flex flex-1 flex-col h-full overflow-hidden">
+        <NoProjectState />
+      </div>
+    );
+  }
+
+  if (!activeConversationId) {
+    return (
+      <div className="flex flex-1 flex-col h-full overflow-hidden">
+        <EmptyState />
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
-      <div className="flex flex-1 flex-col h-screen">
+      <div className="flex flex-1 flex-col h-full overflow-hidden">
         <header className="flex h-12 items-center justify-between border-b px-4 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="h-6" />
             {config && (
               <>
                 <Avatar className="h-6 w-6">
@@ -130,7 +155,7 @@ export function ChatWindow() {
           </Tooltip>
         </header>
 
-        <ScrollArea className="flex-1 px-4 py-6">
+        <ScrollArea className="flex-1 min-h-0 px-4 py-6">
           <div className="max-w-2xl mx-auto space-y-1">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -154,8 +179,6 @@ export function ChatWindow() {
             <div ref={scrollRef} />
           </div>
         </ScrollArea>
-
-        <Separator />
 
         <div className="p-4 shrink-0 bg-background">
           <div className="max-w-2xl mx-auto flex gap-2 items-end">

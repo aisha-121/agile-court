@@ -7,3 +7,4 @@ sentence-transformers>=3.3.0
 faiss-cpu>=1.13.0
 numpy>=2.1.0
 python-dotenv>=1.0.1
+python-multipart>=0.0.9

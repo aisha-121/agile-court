@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme-provider';
 import { useChatStore } from '@/stores/chatStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { ROLE_CONFIG, ROLES } from '@/lib/roles';
 
 export function AppSidebar() {
@@ -27,14 +28,14 @@ export function AppSidebar() {
   const createConversation = useChatStore((s) => s.createConversation);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
   const deleteConversation = useChatStore((s) => s.deleteConversation);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
 
-  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+  useEffect(() => { fetchConversations(); }, [fetchConversations, activeProjectId]);
 
   return (
     <TooltipProvider delayDuration={300}>
       <Sidebar>
-        <SidebarHeader className="border-b px-4">
-          <div className="flex items-center justify-between">
+        <SidebarHeader className="h-12 border-b px-4 flex-row items-center justify-between py-0 gap-0">
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
                 AC
@@ -45,7 +46,6 @@ export function AppSidebar() {
               <Contrast className="h-4 w-4" />
               <span className="sr-only">Toggle theme</span>
             </Button>
-          </div>
         </SidebarHeader>
 
         <SidebarContent>
@@ -56,7 +56,11 @@ export function AppSidebar() {
                 <SidebarMenuItem key={role}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <SidebarMenuButton onClick={() => createConversation(role)} className="h-8 group">
+                      <SidebarMenuButton
+                        onClick={() => createConversation(role)}
+                        className="h-8 group"
+                        disabled={activeProjectId === null}
+                      >
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${cfg.avatarClass}`}>
                           {cfg.initials}
                         </span>
@@ -67,20 +71,24 @@ export function AppSidebar() {
                         <Plus className="h-3 w-3 ml-auto shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </SidebarMenuButton>
                     </TooltipTrigger>
-                    <TooltipContent side="right">New chat with {cfg.name}</TooltipContent>
+                    <TooltipContent side="right">
+                      {activeProjectId === null ? 'Select a project first' : `New chat with ${cfg.name}`}
+                    </TooltipContent>
                   </Tooltip>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroup>
 
-          <Separator className="mx-2" />
+          <Separator />
 
           <SidebarGroup>
             <SidebarGroupLabel>History</SidebarGroupLabel>
             <SidebarMenu>
               {conversations.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-2 py-2 italic">No conversations yet</p>
+                <p className="text-xs text-muted-foreground px-2 py-2 italic">
+                  {activeProjectId === null ? 'Select a project to start' : 'No conversations yet'}
+                </p>
               ) : (
                 conversations.map((conv) => {
                   const cfg = ROLE_CONFIG[conv.role];
