@@ -2,7 +2,7 @@ import os
 from typing import List, Dict
 from huggingface_hub import InferenceClient
 
-DEFAULT_MODEL = os.getenv("HF_MODEL", "microsoft/Phi-3-mini-4k-instruct:featherless-ai")
+DEFAULT_MODEL = os.getenv("HF_MODEL", "microsoft/Phi-4-mini-instruct:featherless-ai")
 
 
 class LLMService:
